@@ -969,7 +969,7 @@ function Simulationcraft:GetSimcProfile(debugOutput, noBags, showMerchant, links
             simulationcraftProfile = simulationcraftProfile .. '#\n'
             if itemName and level then
               itemNameComment = itemName .. ' ' .. '(' .. level .. ')'
-              simulationcraftProfile = simulationcraftProfile .. '# ' .. itemNameComment .. '\n'
+              simulationcraftProfile = simulationcraftProfile .. '# copy="' .. itemNameComment .. '"\n'
             end
             simulationcraftProfile = simulationcraftProfile .. '# ' .. itemStr .. "\n"
           end
