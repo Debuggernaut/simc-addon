@@ -929,6 +929,18 @@ function Simulationcraft:GetSimcProfile(debugOutput, noBags, showMerchant, links
     if item then
       if item.name then
         simulationcraftProfile = simulationcraftProfile .. '# ' .. item.name .. '\n'
+        
+        local itemLink = GetInventoryItemLink('player', slotNum)
+
+        -- if we don't have an item link, we don't care
+        if itemLink then
+          -- In theory, this should always be loaded/cached
+          local name = GetItemName(itemLink)
+
+          -- get correct level for scaling gear
+          local level, _, _ = GetDetailedItemLevelInfo(itemLink)
+          items[slotNum].level = level
+        end
       end
       simulationcraftProfile = simulationcraftProfile .. items[slotNum].string .. '\n'
     end
@@ -944,7 +956,7 @@ function Simulationcraft:GetSimcProfile(debugOutput, noBags, showMerchant, links
       for i=1, #bagItems do
         simulationcraftProfile = simulationcraftProfile .. '#\n'
         if bagItems[i].name and bagItems[i].name ~= '' then
-          simulationcraftProfile = simulationcraftProfile .. '# ' .. bagItems[i].name .. '\n'
+          simulationcraftProfile = simulationcraftProfile .. '#copy="' .. bagItems[i].name .. '"\n'
         end
         simulationcraftProfile = simulationcraftProfile .. '# ' .. bagItems[i].string .. '\n'
       end
@@ -969,7 +981,7 @@ function Simulationcraft:GetSimcProfile(debugOutput, noBags, showMerchant, links
             simulationcraftProfile = simulationcraftProfile .. '#\n'
             if itemName and level then
               itemNameComment = itemName .. ' ' .. '(' .. level .. ')'
-              simulationcraftProfile = simulationcraftProfile .. '# copy="' .. itemNameComment .. '"\n'
+              simulationcraftProfile = simulationcraftProfile .. '# copy="' .. itemNameComment .. '",' .. playerName .. '\n'
             end
             simulationcraftProfile = simulationcraftProfile .. '# ' .. itemStr .. "\n"
           end
