@@ -923,96 +923,115 @@ function Simulationcraft:GetSimcProfile(debugOutput, noBags, showMerchant, links
   -- Method that gets gear information
   local items = Simulationcraft:GetItemStrings(debugOutput)
 
-  -- output gear
-  for slotNum=1, #slotNames do
-    local item = items[slotNum]
-    if item then
-      if item.name then
-        simulationcraftProfile = simulationcraftProfile .. '# ' .. item.name .. '\n'
-        
-        local itemLink = GetInventoryItemLink('player', slotNum)
+  ilevelOverrides = {nil, 658, 665, 675, 678}
 
-        -- if we don't have an item link, we don't care
-        if itemLink then
-          -- In theory, this should always be loaded/cached
-          local name = GetItemName(itemLink)
-
-          -- get correct level for scaling gear
-          local level, _, _ = GetDetailedItemLevelInfo(itemLink)
-          items[slotNum].level = level
-        end
-      end
-      simulationcraftProfile = simulationcraftProfile .. items[slotNum].string .. '\n'
+  for curilvlo = 1, #ilevelOverrides do
+    ilvlO = ilevelOverrides[curilvlo]
+    ilvlS = ' (' .. tostring(ilvlO) .. ')'
+    ilevelS = ',ilevel=' .. tostring(ilvlO) .. ''
+    if ilvlO == nil then
+      ilvlS = ""
+      ilevelS = ""
     end
-  end
+    -- output gear
+    for slotNum=1, #slotNames do
+      local item = items[slotNum]
+      if item then
+        if item.name then
+          if ilvlO == nil then
+            simulationcraftProfile = simulationcraftProfile .. '# ' .. item.name .. '\n'
+          else
+            simulationcraftProfile = simulationcraftProfile .. '#copy="' .. item.name .. ilvlS .. '","' .. playerName .. '"\n'
+          end
+          
+          local itemLink = GetInventoryItemLink('player', slotNum)
 
-  -- output gear from bags
-  if noBags == false then
-    local bagItems = Simulationcraft:GetBagItemStrings(debugOutput)
+          -- if we don't have an item link, we don't care
+          if itemLink then
+            -- In theory, this should always be loaded/cached
+            local name = GetItemName(itemLink)
 
-    if #bagItems > 0 then
-      simulationcraftProfile = simulationcraftProfile .. '\n'
-      simulationcraftProfile = simulationcraftProfile .. '### Gear from Bags\n'
-      for i=1, #bagItems do
-        simulationcraftProfile = simulationcraftProfile .. '#\n'
-        if bagItems[i].name and bagItems[i].name ~= '' then
-          simulationcraftProfile = simulationcraftProfile .. '#copy="' .. bagItems[i].name .. '"\n'
-        end
-        simulationcraftProfile = simulationcraftProfile .. '# ' .. bagItems[i].string .. '\n'
-      end
-    end
-  end
-
-  -- output weekly reward gear
-  if WeeklyRewards then
-    if WeeklyRewards:HasAvailableRewards() then
-      simulationcraftProfile = simulationcraftProfile .. '\n'
-      simulationcraftProfile = simulationcraftProfile .. '### Weekly Reward Choices\n'
-      local activities = WeeklyRewards.GetActivities()
-      for _, activityInfo in ipairs(activities) do
-        for _, rewardInfo in ipairs(activityInfo.rewards) do
-          local _, _, _, itemEquipLoc = GetItemInfoInstant(rewardInfo.id)
-          local itemLink = WeeklyRewards.GetItemHyperlink(rewardInfo.itemDBID)
-          local itemName = GetItemName(itemLink);
-          local slotNum = Simulationcraft.invTypeToSlotNum[itemEquipLoc]
-          if slotNum then
-            local itemStr = GetItemStringFromItemLink(slotNum, itemLink, debugOutput)
+            -- get correct level for scaling gear
             local level, _, _ = GetDetailedItemLevelInfo(itemLink)
-            simulationcraftProfile = simulationcraftProfile .. '#\n'
-            if itemName and level then
-              itemNameComment = itemName .. ' ' .. '(' .. level .. ')'
-              simulationcraftProfile = simulationcraftProfile .. '# copy="' .. itemNameComment .. '",' .. playerName .. '\n'
-            end
-            simulationcraftProfile = simulationcraftProfile .. '# ' .. itemStr .. "\n"
+            items[slotNum].level = level
           end
         end
-      end
-      simulationcraftProfile = simulationcraftProfile .. '#\n'
-      simulationcraftProfile = simulationcraftProfile .. '### End of Weekly Reward Choices\n'
-    end
-  end
-
-  -- Dump out equippable items from a vendor, this is mostly for debugging / data collection
-  local numMerchantItems = GetMerchantNumItems()
-  if showMerchant and numMerchantItems > 0 then
-    simulationcraftProfile = simulationcraftProfile .. '\n'
-    simulationcraftProfile = simulationcraftProfile .. '\n### Merchant items\n'
-    for i=1,numMerchantItems do
-      local link = GetMerchantItemLink(i)
-      local name,_,_,_,_,_,_,_,invType = GetItemInfo(link)
-      if name and invType ~= "" then
-        local slotNum = Simulationcraft.invTypeToSlotNum[invType]
-        -- Doesn't work, seems to always return base item level
-        -- local level, _, _ = GetDetailedItemLevelInfo(itemLink)
-        local itemStr = GetItemStringFromItemLink(slotNum, link, false)
-        simulationcraftProfile = simulationcraftProfile .. '#\n'
-        if name then
-          simulationcraftProfile = simulationcraftProfile .. '# ' .. name .. '\n'
+        if ilvlO == nil then
+          simulationcraftProfile = simulationcraftProfile .. items[slotNum].string .. '\n'
+        else
+          simulationcraftProfile = simulationcraftProfile .. items[slotNum].string .. ilevelS .. '\n'
         end
-        simulationcraftProfile = simulationcraftProfile .. '# ' .. itemStr .. "\n"
       end
     end
-  end
+
+    -- output gear from bags
+    if noBags == false then
+      local bagItems = Simulationcraft:GetBagItemStrings(debugOutput)
+
+      if #bagItems > 0 then
+        simulationcraftProfile = simulationcraftProfile .. '\n'
+        simulationcraftProfile = simulationcraftProfile .. '### Gear from Bags\n'
+        for i=1, #bagItems do
+          simulationcraftProfile = simulationcraftProfile .. '#\n'
+          if bagItems[i].name and bagItems[i].name ~= '' then
+            simulationcraftProfile = simulationcraftProfile .. '#copy="' .. bagItems[i].name .. ilvlS .. '","' .. playerName .. '"\n'
+          end
+          simulationcraftProfile = simulationcraftProfile .. '# ' .. bagItems[i].string .. ilevelS .. '\n'
+        end
+      end
+    end
+
+    -- output weekly reward gear
+    if WeeklyRewards then
+      if WeeklyRewards:HasAvailableRewards() then
+        simulationcraftProfile = simulationcraftProfile .. '\n'
+        simulationcraftProfile = simulationcraftProfile .. '### Weekly Reward Choices\n'
+        local activities = WeeklyRewards.GetActivities()
+        for _, activityInfo in ipairs(activities) do
+          for _, rewardInfo in ipairs(activityInfo.rewards) do
+            local _, _, _, itemEquipLoc = GetItemInfoInstant(rewardInfo.id)
+            local itemLink = WeeklyRewards.GetItemHyperlink(rewardInfo.itemDBID)
+            local itemName = GetItemName(itemLink);
+            local slotNum = Simulationcraft.invTypeToSlotNum[itemEquipLoc]
+            if slotNum then
+              local itemStr = GetItemStringFromItemLink(slotNum, itemLink, debugOutput)
+              local level, _, _ = GetDetailedItemLevelInfo(itemLink)
+              simulationcraftProfile = simulationcraftProfile .. '#\n'
+              if itemName and level then
+                itemNameComment = itemName .. ' ' .. '(' .. level .. ')'
+                simulationcraftProfile = simulationcraftProfile .. '# copy="' .. itemNameComment .. ilvlS .. '",' .. playerName .. '\n'
+              end
+              simulationcraftProfile = simulationcraftProfile .. '# ' .. itemStr .. ilevelS .. "\n"
+            end
+          end
+        end
+        simulationcraftProfile = simulationcraftProfile .. '#\n'
+        simulationcraftProfile = simulationcraftProfile .. '### End of Weekly Reward Choices\n'
+      end
+    end
+
+    -- Dump out equippable items from a vendor, this is mostly for debugging / data collection
+    local numMerchantItems = GetMerchantNumItems()
+    if showMerchant and numMerchantItems > 0 then
+      simulationcraftProfile = simulationcraftProfile .. '\n'
+      simulationcraftProfile = simulationcraftProfile .. '\n### Merchant items\n'
+      for i=1,numMerchantItems do
+        local link = GetMerchantItemLink(i)
+        local name,_,_,_,_,_,_,_,invType = GetItemInfo(link)
+        if name and invType ~= "" then
+          local slotNum = Simulationcraft.invTypeToSlotNum[invType]
+          -- Doesn't work, seems to always return base item level
+          -- local level, _, _ = GetDetailedItemLevelInfo(itemLink)
+          local itemStr = GetItemStringFromItemLink(slotNum, link, false)
+          simulationcraftProfile = simulationcraftProfile .. '#\n'
+          if name then
+            simulationcraftProfile = simulationcraftProfile .. '# ' .. name .. '\n'
+          end
+          simulationcraftProfile = simulationcraftProfile .. '# ' .. itemStr .. "\n"
+        end
+      end
+    end
+  end 
 
 
   -- output item links that were included in the /simc chat line
