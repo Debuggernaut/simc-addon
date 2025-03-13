@@ -523,7 +523,7 @@ local function GetItemStringFromItemLink(slotNum, itemLink, debugOutput)
   return itemStr
 end
 
-function Simulationcraft:GetItemStrings(debugOutput)
+function Simulationcraft:GetItemStrings(debugOutput, enchantstrings)
   local items = {}
   for slotNum=1, #slotNames do
     local slotId = GetInventorySlotInfo(slotNames[slotNum])
@@ -546,6 +546,24 @@ function Simulationcraft:GetItemStrings(debugOutput)
         string = GetItemStringFromItemLink(slotNum, itemLink, debugOutput),
         name = itemComment
       }
+
+      if enchantstrings then
+        local itemSplit = GetItemSplit(itemLink)
+        local simcItemOptions = {}
+        local gems = {}
+        local gemBonuses = {}
+
+        -- Item id
+        local itemId = itemSplit[OFFSET_ITEM_ID]
+        simcItemOptions[#simcItemOptions + 1] = ',id=' .. itemId
+
+        items[slotNum] = ""
+
+        -- Enchant
+        if itemSplit[OFFSET_ENCHANT_ID] > 0 then
+          items[slotNum] = ',enchant_id=' .. itemSplit[OFFSET_ENCHANT_ID]
+        end
+      end
     end
   end
 
@@ -921,9 +939,11 @@ function Simulationcraft:GetSimcProfile(debugOutput, noBags, showMerchant, links
   simulationcraftProfile = simulationcraftProfile .. '\n'
 
   -- Method that gets gear information
-  local items = Simulationcraft:GetItemStrings(debugOutput)
+  local items = Simulationcraft:GetItemStrings(debugOutput, false)
 
-  ilevelOverrides = {nil, 658, 665, 675, 678}
+  ilevelOverrides = {nil, 658}
+  slotenchants = {}
+  local slotenchants = Simulationcraft:GetItemStrings(debugOutput, true)
 
   for curilvlo = 1, #ilevelOverrides do
     ilvlO = ilevelOverrides[curilvlo]
@@ -959,7 +979,7 @@ function Simulationcraft:GetSimcProfile(debugOutput, noBags, showMerchant, links
         if ilvlO == nil then
           simulationcraftProfile = simulationcraftProfile .. items[slotNum].string .. '\n'
         else
-          simulationcraftProfile = simulationcraftProfile .. items[slotNum].string .. ilevelS .. '\n'
+          simulationcraftProfile = simulationcraftProfile .. "#" .. items[slotNum].string .. ilevelS .. '\n'
         end
       end
     end
@@ -974,9 +994,13 @@ function Simulationcraft:GetSimcProfile(debugOutput, noBags, showMerchant, links
         for i=1, #bagItems do
           simulationcraftProfile = simulationcraftProfile .. '#\n'
           if bagItems[i].name and bagItems[i].name ~= '' then
-            simulationcraftProfile = simulationcraftProfile .. '#copy="' .. bagItems[i].name .. ilvlS .. '","' .. playerName .. '"\n'
+            simulationcraftProfile = simulationcraftProfile .. '#copy="' .. bagItems[i].name .. ilvlS ..  '","' .. playerName .. '"\n'
           end
-          simulationcraftProfile = simulationcraftProfile .. '# ' .. bagItems[i].string .. ilevelS .. '\n'
+          local ench = ""
+          if bagItems[i].slotNum and bagItems[i].slotNum <= #slotenchants then
+            ench = slotenchants[bagItems[i].slotNum]
+          end
+          simulationcraftProfile = simulationcraftProfile .. '# ' .. bagItems[i].string .. ilevelS .. ench ..'\n'
         end
       end
     end
@@ -1001,7 +1025,11 @@ function Simulationcraft:GetSimcProfile(debugOutput, noBags, showMerchant, links
                 itemNameComment = itemName .. ' ' .. '(' .. level .. ')'
                 simulationcraftProfile = simulationcraftProfile .. '# copy="' .. itemNameComment .. ilvlS .. '",' .. playerName .. '\n'
               end
-              simulationcraftProfile = simulationcraftProfile .. '# ' .. itemStr .. ilevelS .. "\n"
+              local ench = ""
+              if slotNum and slotNum <= #slotenchants then
+                ench = slotenchants[slotNum]
+              end
+              simulationcraftProfile = simulationcraftProfile .. '# ' .. itemStr .. ilevelS .. ench .."\n"
             end
           end
         end
